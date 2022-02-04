@@ -1,6 +1,15 @@
 # Conditional mutual information
 
-Python routines to compute [mutual information](https://en.wikipedia.org/wiki/Mutual_information) and [conditional mutual information](https://en.wikipedia.org/wiki/Conditional_mutual_information) for continuous variables, using a nearest-neighbor algorithm. The implementation is based on the related methods available in [scikit-learn](scikit-learn.org/), implemented by Nikolay Mayorov.
+Python routines to efficiently compute conditional mutual information.
+
+## Overview
+
+Both [mutual information](https://en.wikipedia.org/wiki/Mutual_information) and
+[conditional mutual
+information](https://en.wikipedia.org/wiki/Conditional_mutual_information) can
+be computed for continuous variables, using a nearest-neighbor algorithm. The
+implementation is based on the related methods available in
+[scikit-learn](scikit-learn.org/), implemented by Nikolay Mayorov.
 
 ## Usage
 
