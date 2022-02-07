@@ -29,8 +29,9 @@ x, y, z = samples[:, 0], samples[:, 1], samples[:, 2]
 # plt.show()
 
 
-# Analytic solution
 def cmi_analytic(cov):
+    '''Get analytic conditional mutual information for variables x, y given z,
+    given a covariance matrix cov.'''
     # Construct minor matrices for x and y
     cov_x = cov[1:, 1:]
     cov_y = cov[[0, 2]][:, [0, 2]]
