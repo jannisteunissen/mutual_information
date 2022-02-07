@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import numpy as np
-from mutual_info import _compute_cmi_ccc, mutual_information_v2
+from mutual_info import compute_cmi, compute_mi
 from numpy.linalg import det
 
 # Sample size
-N = 2000
+N = 20000
 
 # Sample mean
 mu = np.zeros(3)
@@ -39,5 +39,10 @@ def cmi_analytic(cov):
 
 
 print("Theory: ", cmi_analytic(cov))
-cmi = _compute_cmi_ccc(x, y, z, 3)
+cmi = compute_cmi(x, y, z, 3)
 print("cmi: ", cmi)
+
+# I(x;y|z) = I(x;y,z) - I(x;z)
+a = compute_mi(x, np.column_stack([y, z]), 3)
+b = compute_mi(x, z, 3)
+print("I(x;y|z) = I(x;y,z) - I(x;z):", a - b)
