@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
-from mutual_info import _compute_cmi_ccc
+from mutual_info import _compute_cmi_ccc, mutual_information_v2
 from numpy.linalg import det
 
 # Sample size
