@@ -6,18 +6,24 @@
 
 import numpy as np
 from scipy.special import digamma
-from sklearn.neighbors import NearestNeighbors, KDTree
+from sklearn.neighbors import KDTree
 
 
 def get_radius_kneighbors(x, n_neighbors):
-    # Here we rely on NearestNeighbors to select the fastest algorithm.
-    nn = NearestNeighbors(metric="chebyshev", n_neighbors=n_neighbors)
-    nn.fit(x)
+    """Determine smallest radius around x containing n_neighbors neighbors
 
-    # Get distance ndarray of shape (n_queries, n_neighbors)
-    neigh_dist = nn.kneighbors()[0]
+    :param x: ndarray, shape (n_samples, n_dim)
+    :param n_neighbors: number of neighbors
+    :returns: radius, shape (n_samples,)
 
-    # Take radius as distance to last neighbor
+    """
+    # Use KDTree for simplicity (sometimes a ball tree could be faster)
+    kd = KDTree(x, metric="chebyshev")
+
+    # Results include point itself, therefore n_neighbors+1
+    neigh_dist = kd.query(x, k=n_neighbors+1)[0]
+
+    # Take radius slightly larger than distance to last neighbor
     radius = np.nextafter(neigh_dist[:, -1], 0)
     return radius
 
