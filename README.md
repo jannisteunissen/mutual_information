@@ -1,6 +1,6 @@
-# Conditional mutual information
+# Mutual information
 
-Python routines to efficiently compute conditional mutual information.
+Python routines to compute (conditional) mutual information
 
 ## Overview
 
