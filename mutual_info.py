@@ -69,7 +69,7 @@ def add_noise(x, rng, noise_type='uniform', amplitude=1e-10):
     if noise_type == 'uniform':
         x += amplitude * means * (rng.random(x.shape) - 0.5)
     elif noise_type == 'normal':
-        x += amplitude * means * rng.normal(x.shape)
+        x += amplitude * means * rng.normal(size=x.shape)
     else:
         raise ValueError('Invalid noise type')
 
