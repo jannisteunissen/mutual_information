@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 import numpy as np
-from mutual_info import compute_cmi, compute_mi
+from mutual_info import compute_cmi, compute_mi, compute_mi_discrete
 from numpy.linalg import det
+import timeit
+from sklearn.feature_selection import mutual_info_regression
+
 
 # Sample size
-N = 20000
+N = 20*1000
 
 # Sample mean
 mu = np.zeros(3)
@@ -39,10 +42,15 @@ def cmi_analytic(cov):
 
 
 print("Theory: ", cmi_analytic(cov))
+tic = timeit.default_timer()
 cmi = compute_cmi(x, y, z, 3)
+toc = timeit.default_timer()
 print("cmi: ", cmi)
+print("time: ", toc-tic)
 
 # I(x;y|z) = I(x;y,z) - I(x;z)
 a = compute_mi(x, np.column_stack([y, z]), 3)
 b = compute_mi(x, z, 3)
 print("I(x;y|z) = I(x;y,z) - I(x;z):", a - b)
+
+# print(b, compute_mi_v2(x, z, 3))
