@@ -58,13 +58,13 @@ def ensure_2d(x):
 
 
 def add_noise(x, rng, noise_type='uniform', amplitude=1e-10):
-    """Add noise to ensure samples are unique, and convert to float64"""
+    """Add noise so that samples are probably unique, and convert to float64"""
 
     # Using float64 so that numerical precision is known
     x = x.astype(np.float64, copy=True)
 
     # Estimate mean amplitude
-    means = np.maximum(1, np.mean(np.abs(x), axis=0))
+    means = np.maximum(1e-100, np.mean(np.abs(x), axis=0))
 
     if noise_type == 'uniform':
         x += amplitude * means * (rng.random(x.shape) - 0.5)
