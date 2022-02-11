@@ -4,6 +4,7 @@ import numpy as np
 import argparse
 from mutual_info import compute_cmi, compute_mi
 from numpy.random import default_rng
+from numpy.linalg import det
 
 
 def get_args():
@@ -14,8 +15,10 @@ def get_args():
     p.add_argument('-n_runs', type=int, default=10,
                    help='Number of runs of the test')
     p.add_argument('-tests', type=str, nargs='+',
-                   choices=['half_discrete', 'mixed', 'discrete', 'bivariate'],
-                   default=['half_discrete', 'mixed', 'discrete', 'bivariate'],
+                   choices=['half_discrete', 'mixed', 'discrete', 'bivariate',
+                            'trivariate'],
+                   default=['half_discrete', 'mixed', 'discrete', 'bivariate',
+                            'trivariate'],
                    help='Which tests to perform')
     p.add_argument('-noise_type', type=str,
                    choices=['uniform', 'normal'],
@@ -32,11 +35,11 @@ def test_half_discrete(N, n_neighbors, rng, noise):
     x = rng.integers(0, m, size=N)
     y = rng.uniform(x, x+2, size=N)
     z = rng.binomial(3, 0.5, size=N)
-    mi_analytic = np.log(m) - (1 - 1/m) * np.log(2)
+    cmi_analytic = np.log(m) - (1 - 1/m) * np.log(2)
 
     cmi = compute_cmi(x, y, z, n_neighbors, noise)
     mi = compute_mi(x, y, n_neighbors, noise)
-    return [cmi, mi, mi_analytic]
+    return [cmi, mi, cmi_analytic]
 
 
 def test_mixed(N, n_neighbors, rng, noise):
@@ -59,13 +62,13 @@ def test_mixed(N, n_neighbors, rng, noise):
     y = np.where(mask, xy_gauss[:, 1], xy_discrete[:, 1])
     z = rng.binomial(3, 0.2, size=N)
 
-    mi_analytic = 0.4 * np.log(2 * 0.4/0.5**2) \
+    cmi_analytic = 0.4 * np.log(2 * 0.4/0.5**2) \
         + 0.1 * np.log(2 * 0.1/0.5**2) \
         + 0.125 * np.log(4/(1 - 0.8**2))
 
     cmi = compute_cmi(x, y, z, n_neighbors, noise)
     mi = compute_mi(x, y, n_neighbors, noise)
-    return [cmi, mi, mi_analytic]
+    return [cmi, mi, cmi_analytic]
 
 
 def test_discrete(N, n_neighbors, rng, noise):
@@ -80,10 +83,10 @@ def test_discrete(N, n_neighbors, rng, noise):
     x, y = xy_discrete[:, 0], xy_discrete[:, 1]
     z = rng.poisson(2, size=N)
 
-    mi_analytic = 2 * 0.4 * np.log(0.4/0.5**2) + 2 * 0.1 * np.log(0.1/0.5**2)
+    cmi_analytic = 2 * 0.4 * np.log(0.4/0.5**2) + 2 * 0.1 * np.log(0.1/0.5**2)
     cmi = compute_cmi(x, y, z, n_neighbors, noise)
     mi = compute_mi(x, y, n_neighbors, noise)
-    return [cmi, mi, mi_analytic]
+    return [cmi, mi, cmi_analytic]
 
 
 def test_bivariate(N, n_neighbors, rng, noise):
@@ -94,10 +97,38 @@ def test_bivariate(N, n_neighbors, rng, noise):
     x, y = xy_gauss[:, 0], xy_gauss[:, 1]
     z = rng.normal(size=N)
 
-    mi_analytic = -0.5 * np.log(np.linalg.det(cov))
+    cmi_analytic = -0.5 * np.log(det(cov))
     cmi = compute_cmi(x, y, z, n_neighbors, noise)
     mi = compute_mi(x, y, n_neighbors, noise)
-    return [cmi, mi, mi_analytic]
+    return [cmi, mi, cmi_analytic]
+
+
+def test_trivariate(N, n_neighbors, rng, noise):
+    """Test with 'trivariate' normal variables x, y, z"""
+    mu = np.zeros(3)
+
+    # Covariance matrix
+    cov_xy = 0.7
+    cov_xz = 0.5
+    cov_yz = 0.3
+    cov = np.array([[1, cov_xy, cov_xz],
+                    [cov_xy, 1.0, cov_yz],
+                    [cov_xz, cov_yz, 1]])
+
+    samples = rng.multivariate_normal(mu, cov, size=N)
+    x, y, z = samples[:, 0], samples[:, 1], samples[:, 2]
+
+    # Construct minor matrices for x and y
+    cov_x = cov[1:, 1:]
+    cov_y = cov[[0, 2]][:, [0, 2]]
+    cmi_analytic = -0.5 * np.log(det(cov) / (det(cov_x) * det(cov_y)))
+
+    cmi = compute_cmi(x, y, z, n_neighbors, noise)
+
+    # Estimate via I(x;y|z) = I(x;y,z) - I(x;z)
+    mi = compute_mi(x, np.column_stack([y, z]), n_neighbors, noise) - \
+        compute_mi(x, z, n_neighbors, noise)
+    return [cmi, mi, cmi_analytic]
 
 
 if __name__ == '__main__':
@@ -105,7 +136,8 @@ if __name__ == '__main__':
     tests = {'half_discrete': test_half_discrete,
              'mixed': test_mixed,
              'discrete': test_discrete,
-             'bivariate': test_bivariate}
+             'bivariate': test_bivariate,
+             'trivariate': test_trivariate}
     rng = default_rng()
 
     print('{:20} {:9} {:9} {:9} {:9} {:9} {:9} {:9}'.format(

@@ -52,8 +52,8 @@ def ensure_2d(x):
     # Ensure 2D and dtype float
     if x.ndim == 1:
         x = x.reshape(-1, 1)
-    else:
-        raise ValueError('x.ndim not equal to 1 or 2')
+    elif x.ndim != 2:
+        raise ValueError(f'x.ndim = {x.ndim}, should be 1 or 2')
     return x
 
 
