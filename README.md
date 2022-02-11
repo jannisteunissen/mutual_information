@@ -13,7 +13,7 @@ implementation is based on the related methods available in
 
 ## Usage
 
-    ./cmi_test.py
+TODO
 
 ## Implementation
 
