@@ -42,9 +42,8 @@ def num_points_within_radius(x, radius):
     return np.array(nx) - 1.0
 
 
-def ensure_2d(x, rng=default_rng()):
-    """Ensure ndarray is 2d and add a small amount of noise to avoid duplicate
-    samples
+def ensure_2d(x):
+    """Ensure ndarray is 2d
 
     :param x: ndarray, shape (n_samples,) or (n_samples, n_features)
     :returns: float ndarray, shape (n_samples, n_features)
@@ -52,43 +51,59 @@ def ensure_2d(x, rng=default_rng()):
     """
     # Ensure 2D and dtype float
     if x.ndim == 1:
-        x = x.copy().astype(float)[:, np.newaxis]
-    elif x.ndim == 2:
-        x = x.copy().astype(float)
+        x = x.reshape(-1, 1)
     else:
         raise ValueError('x.ndim not equal to 1 or 2')
-
-    # Add noise to ensure samples are unique, see Kraskov et. al.
-    # means = np.maximum(1, np.mean(np.abs(x), axis=0))
-    # Use 'cheap' uniform random numbers
-    # x += 1e-10 * means * (rng.random(x.shape) - 0.5)
     return x
 
 
-def compute_mi(x, y, n_neighbors=3):
+def add_noise(x, rng, noise_type='uniform', amplitude=1e-10):
+    """Add noise to ensure samples are unique, and convert to float64"""
+
+    # Using float64 so that numerical precision is known
+    x = x.astype(np.float64, copy=True)
+
+    # Estimate mean amplitude
+    means = np.maximum(1, np.mean(np.abs(x), axis=0))
+
+    if noise_type == 'uniform':
+        x += amplitude * means * (rng.random(x.shape) - 0.5)
+    elif noise_type == 'normal':
+        x += amplitude * means * rng.normal(x.shape)
+    else:
+        raise ValueError('Invalid noise type')
+
+    return x
+
+
+def compute_mi(x, y, n_neighbors=3, noise_type=None):
     """Compute mutual information between two continuous variables.
 
     :param x: real ndarray, shape (n_samples,) or (n_samples, n_features)
     :param y: real ndarray, shape (n_samples,) or (n_samples, n_features)
     :param n_neighbors: Number of nearest neighbors
+    :param noise_type: add noise of given type (uniform, normal)
     :returns: non-negative estimate of mutual information
+
     """
-    if len(x) != len(y):
-        raise ValueError('x and y should have the same length')
-
-    x = ensure_2d(x)
-    y = ensure_2d(y)
-    xy = np.hstack((x, y))
     n_samples = len(x)
-    k = np.full(n_samples, n_neighbors)
+    x, y = [ensure_2d(t) for t in [x, y]]
 
+    if noise_type:
+        rng = default_rng()
+        x, y = [add_noise(t, rng, noise_type) for t in [x, y]]
+
+    xy = np.hstack((x, y))
+    k = np.full(n_samples, n_neighbors)
     radius = get_radius_kneighbors(xy, n_neighbors)
 
-    # Where radius is 0, determine multiplicity
-    mask = (radius == 0)
-    vals, ix, counts = np.unique(xy[mask], axis=0, return_inverse=True,
-                                 return_counts=True)
-    k[mask] = counts[ix] - 1
+    if noise_type is None:
+        # Where radius is 0, determine multiplicity
+        mask = (radius == 0)
+        if mask.sum() > 0:
+            vals, ix, counts = np.unique(xy[mask], axis=0, return_inverse=True,
+                                         return_counts=True)
+            k[mask] = counts[ix] - 1
 
     nx = num_points_within_radius(x, radius)
     ny = num_points_within_radius(y, radius)
@@ -98,26 +113,42 @@ def compute_mi(x, y, n_neighbors=3):
     return mi
 
 
-def compute_cmi(x, y, z, n_neighbors=3):
+def compute_cmi(x, y, z, n_neighbors=3, noise_type=None):
     """Compute conditional mutual information I(x;y|z)
 
     :param x: real ndarray, shape (n_samples,) or (n_samples, n_features)
     :param y: real ndarray, shape (n_samples,) or (n_samples, n_features)
     :param z: real ndarray, shape (n_samples,) or (n_samples, n_features)
     :param n_neighbors: Number of nearest neighbors
+    :param noise_type: add noise of given type (uniform, normal)
     :returns: non-negative estimate of conditional mutual information
 
     """
-    x = ensure_2d(x)
-    y = ensure_2d(y)
-    z = ensure_2d(z)
+    n_samples = len(x)
+    x, y, z = [ensure_2d(t) for t in [x, y, z]]
 
-    radius = get_radius_kneighbors(np.hstack((x, y, z)), n_neighbors)
+    if noise_type:
+        rng = default_rng()
+        x, y, z = [add_noise(t, rng, noise_type) for t in [x, y, z]]
+
+    xyz = np.hstack((x, y, z))
+    k = np.full(n_samples, n_neighbors)
+    radius = get_radius_kneighbors(xyz, n_neighbors)
+
+    if noise_type is None:
+        # Where radius is 0, determine multiplicity
+        mask = (radius == 0)
+        if mask.sum() > 0:
+            vals, ix, counts = np.unique(xyz[mask], axis=0,
+                                         return_inverse=True,
+                                         return_counts=True)
+            k[mask] = counts[ix] - 1
+
     nxz = num_points_within_radius(np.hstack((x, z)), radius)
     nyz = num_points_within_radius(np.hstack((y, z)), radius)
     nz = num_points_within_radius(z, radius)
 
-    cmi = max(0, digamma(n_neighbors) - np.mean(digamma(nxz + 1))
+    cmi = max(0, np.mean(digamma(k)) - np.mean(digamma(nxz + 1))
               - np.mean(digamma(nyz + 1)) + np.mean(digamma(nz + 1)))
     return cmi
 
