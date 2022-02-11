@@ -11,6 +11,8 @@ def get_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p.add_argument('-N', type=int, default=1000, help='num. samples')
     p.add_argument('-k', type=int, default=3, help='num. neighbors')
+    p.add_argument('-n_runs', type=int, default=10,
+                   help='Number of runs of the test')
     p.add_argument('-tests', type=str, nargs='+',
                    choices=['half_discrete', 'mixed', 'discrete', 'bivariate'],
                    default=['half_discrete', 'mixed', 'discrete', 'bivariate'],
@@ -106,11 +108,18 @@ if __name__ == '__main__':
              'bivariate': test_bivariate}
     rng = default_rng()
 
-    print('{:20} {:9} {:9} {:9} {:9} {:9}'.format(
-        '#name', 'cmi', 'mi', 'sol', 'err_cmi', 'err_mi'))
+    print('{:20} {:9} {:9} {:9} {:9} {:9} {:9} {:9}'.format(
+        '#name', 'cmi', 'mi', 'sol', 'err_cmi', 'err_mi', 'std_cmi', 'std_mi'))
 
     for t in args.tests:
         f = tests[t]
-        cmi, mi, sol = f(args.N, args.k, rng, args.noise_type)
+
+        results = np.zeros((args.n_runs, 3))
+
+        for i in range(args.n_runs):
+            results[i] = f(args.N, args.k, rng, args.noise_type)
+
+        cmi, mi, sol = np.mean(results, axis=0)
+        std_cmi, std_mi = np.std(results[:, 0:2], axis=0, ddof=1)
         print(f'{t:20} {cmi:9.2e} {mi:9.2e} {sol:9.2e} {(cmi-sol)/sol:9.2e}'
-              + f' {(mi-sol)/sol:9.2e}')
+              + f' {(mi-sol)/sol:9.2e} {std_cmi:9.2e} {std_mi:9.2e}')
