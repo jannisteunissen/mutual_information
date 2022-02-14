@@ -4,9 +4,9 @@ Python routines to compute (conditional) mutual information
 
 ## Overview
 
-Both [mutual information](https://en.wikipedia.org/wiki/Mutual_information) and
+Both [mutual information](https://en.wikipedia.org/wiki/Mutual_information) $I(x;y)$ and
 [conditional mutual
-information](https://en.wikipedia.org/wiki/Conditional_mutual_information) can
+information](https://en.wikipedia.org/wiki/Conditional_mutual_information) $I(x;y|z)$ can
 be computed with this module, using a nearest-neighbor algorithm.
 
 ## Requirements
@@ -24,6 +24,10 @@ Compute mutual information between x and y, which can be 1d or 2d arrays:
 Similarly, to compute conditional mutual information:
 
     cmi = compute_cmi(x, y, n_neighbors=3, noise_type=None)
+
+## Tests
+
+The file `run_tests.py` contains several test cases for which analytic solutions are known. Execute it with a `-h` flag to see available options.
 
 ## Method
 
