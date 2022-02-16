@@ -154,3 +154,17 @@ def compute_cmi(x, y, z, n_neighbors=3, noise_type=None):
     cmi = max(0, np.mean(digamma(k)) - np.mean(digamma(nxz + 1))
               - np.mean(digamma(nyz + 1)) + np.mean(digamma(nz + 1)))
     return cmi
+
+
+def compute_batch_mi(x, y, n_neighbors=3, noise_type=None):
+    N = len(x)
+    batch_size = 500
+    n_batches = N//batch_size
+    mi = np.zeros(n_batches)
+
+    for i in range(n_batches):
+        i0 = i * batch_size
+        i1 = i0 + batch_size
+        mi[i] = compute_mi(x[i0:i1], y[i0:i1], n_neighbors, noise_type)
+
+    return mi.mean()
