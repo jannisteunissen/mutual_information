@@ -42,34 +42,37 @@ def num_points_within_radius(x, radius):
     return np.array(nx) - 1.0
 
 
-def ensure_2d(x):
-    """Ensure ndarray is 2d
+def preprocess_data(x):
+    """Preprocess data. Ensure x is 2d ndarray, and scale so that the mean absolute
+    amplitude of each column is one.
 
     :param x: ndarray, shape (n_samples,) or (n_samples, n_features)
     :returns: float ndarray, shape (n_samples, n_features)
 
     """
-    # Ensure 2D and dtype float
+    x = np.array(x, dtype=np.float64)
+
     if x.ndim == 1:
         x = x.reshape(-1, 1)
     elif x.ndim != 2:
         raise ValueError(f'x.ndim = {x.ndim}, should be 1 or 2')
+
+    # Estimate mean absolute amplitude per column
+    means = np.maximum(1e-100, np.mean(np.abs(x), axis=0))
+
+    # Scale so that mean absolute amplitude is one
+    x = (1/means) * x
+
     return x
 
 
 def add_noise(x, rng, noise_type='uniform', amplitude=1e-10):
     """Add noise so that samples are probably unique, and convert to float64"""
 
-    # Using float64 so that numerical precision is known
-    x = x.astype(np.float64, copy=True)
-
-    # Estimate mean amplitude
-    means = np.maximum(1e-100, np.mean(np.abs(x), axis=0))
-
     if noise_type == 'uniform':
-        x += amplitude * means * (rng.random(x.shape) - 0.5)
+        x += amplitude * (rng.random(x.shape) - 0.5)
     elif noise_type == 'normal':
-        x += amplitude * means * rng.normal(size=x.shape)
+        x += amplitude * rng.normal(size=x.shape)
     else:
         raise ValueError('Invalid noise type')
 
@@ -87,7 +90,7 @@ def compute_mi(x, y, n_neighbors=3, noise_type=None):
 
     """
     n_samples = len(x)
-    x, y = [ensure_2d(t) for t in [x, y]]
+    x, y = [preprocess_data(t) for t in [x, y]]
 
     if noise_type:
         rng = default_rng()
@@ -125,7 +128,7 @@ def compute_cmi(x, y, z, n_neighbors=3, noise_type=None):
 
     """
     n_samples = len(x)
-    x, y, z = [ensure_2d(t) for t in [x, y, z]]
+    x, y, z = [preprocess_data(t) for t in [x, y, z]]
 
     if noise_type:
         rng = default_rng()
