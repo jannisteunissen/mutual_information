@@ -140,10 +140,9 @@ if __name__ == '__main__':
              'trivariate': test_trivariate}
     rng = default_rng()
 
-    print(f'N = {args.N}, k = {args.k}, n_runs = {args.n_runs}\n')
-    print('{:20} {:>9} {:>9} {:>9} {:>9} {:>9} {:>9} {:>9}'.format(
-        'test name', 'cmi', 'mi', 'sol', 'err_cmi', 'err_mi',
-        'std_cmi', 'std_mi'))
+    print('{:4} {:7} {:>9} {:>9} {:>9} {:>9} {:>9} {:>9} {:>9} {:20}'.format(
+        'k', 'N', 'cmi', 'mi', 'sol', 'err_cmi', 'err_mi',
+        'std_cmi', 'std_mi', '#test name'))
 
     for t in args.tests:
         f = tests[t]
@@ -155,5 +154,6 @@ if __name__ == '__main__':
 
         cmi, mi, sol = np.mean(results, axis=0)
         std_cmi, std_mi = np.std(results[:, 0:2], axis=0, ddof=1)
-        print(f'{t:20} {cmi:9.2e} {mi:9.2e} {sol:9.2e} {cmi-sol:9.2e}'
-              + f' {mi-sol:9.2e} {std_cmi:9.2e} {std_mi:9.2e}')
+        print(f'{args.k:<4} {args.N:<7} {cmi:9.2e} {mi:9.2e} {sol:9.2e}'
+              + f' {cmi-sol:9.2e} {mi-sol:9.2e} {std_cmi:9.2e}'
+              + f' {std_mi:9.2e} #{t}')
